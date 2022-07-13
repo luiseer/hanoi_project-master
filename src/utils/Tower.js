@@ -25,7 +25,7 @@ class Tower {
     }
   }
 
-  // generador de movimientos
+//funcion recurviva para resolver el juego
   *moveDisks(n, target, buffer) {
     if (n > 0) {
       yield *this.moveDisks(n - 1, buffer, target);

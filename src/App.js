@@ -115,8 +115,9 @@ const App = () => {
   }
 
   const solve = () => {
+
     if (towerThree.disks.length === disks) {
-      alert("Ya has resuelto el problema");
+      alert("El problema ya esta resuelto");
     } else {
       let solution = towerOne.moveDisks(disks, towerThree, towerTwo);
       setTimeInterval(
@@ -127,7 +128,7 @@ const App = () => {
             incrementMoveCount();
             updateTiles();
           }
-        }, 1000)
+        }, 500)
       );
     }
   };
