@@ -1,70 +1,173 @@
-# Getting Started with Create React App
+# Torres de Hanoi
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Visualizador interactivo del clásico problema de las **Torres de Hanoi** con un algoritmo de resolución **recursivo** implementado como **generador (ES6)** en React 18 + Vite.
 
-## Available Scripts
+---
 
-In the project directory, you can run:
+## Lógica del Algoritmo Recursivo
 
-### `npm start`
+### Planteamiento
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+El problema consiste en mover una pila de `n` discos desde una **torre origen** hasta una **torre destino** usando una **torre auxiliar**, bajo dos reglas:
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+1. Solo se puede mover **un disco a la vez** (el superior de cada torre).
+2. **Ningún disco puede colocarse sobre otro más pequeño**.
 
-### `npm test`
+### Solución Recursiva
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+La solución se define con tres pasos fundamentales, que forman el núcleo recursivo:
 
-### `npm run build`
+```
+mover(n, origen, destino, auxiliar):
+  1. mover(n-1, origen, auxiliar, destino)
+  2. mover el disco n de origen → destino
+  3. mover(n-1, auxiliar, destino, origen)
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+**Caso base**: `n = 0` → no hacer nada (termina la recursión).
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### Implementación en el Código
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+El algoritmo vive en `src/utils/Tower.js` como un **generador recursivo** (función `*`):
 
-### `npm run eject`
+```js
+// src/utils/Tower.js:29-35
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+*moveDisks(n, target, buffer) {
+  if (n > 0) {
+    // 1. Mover n-1 discos de origen → buffer (usando target como auxiliar)
+    yield *this.moveDisks(n - 1, buffer, target);
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+    // 2. Mover el disco superior de origen → destino
+    yield this.moveTopTo(target);
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+    // 3. Mover n-1 discos de buffer → destino (usando this como auxiliar)
+    yield *buffer.moveDisks(n - 1, target, this);
+  }
+}
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+**Claves de esta implementación:**
 
-## Learn More
+- `yield *` delega en el sub-generador, permitiendo que cada movimiento se emita uno por uno sin bloquear el event loop.
+- Cada `yield` emite un movimiento atómico (`moveTopTo`), que el frontend consume con un `setInterval` para animar la solución paso a paso (`src/App.jsx:77-90`).
+- La recursión explota el **teorema de la recurrencia**: `T(n) = 2T(n-1) + 1`, resultando en `2ⁿ - 1` movimientos mínimos.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### Traza de Ejecución para 3 Discos
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```
+moveDisks(3, Torre3, Torre2)
+├── moveDisks(2, Torre2, Torre3)
+│   ├── moveDisks(1, Torre3, Torre2)
+│   │   ├── moveDisks(0, Torre2, Torre3) → caso base
+│   │   ├── Mover disco 1: Torre1 → Torre3
+│   │   └── moveDisks(0, Torre3, Torre1) → caso base
+│   ├── Mover disco 2: Torre1 → Torre2
+│   └── moveDisks(1, Torre2, Torre1)
+│       ├── moveDisks(0, Torre1, Torre3) → caso base
+│       ├── Mover disco 1: Torre3 → Torre2
+│       └── moveDisks(0, Torre2, Torre3) → caso base
+├── Mover disco 3: Torre1 → Torre3
+└── moveDisks(2, Torre3, Torre1)
+    ├── moveDisks(1, Torre1, Torre3)
+    │   ├── moveDisks(0, Torre3, Torre2) → caso base
+    │   ├── Mover disco 1: Torre2 → Torre1
+    │   └── moveDisks(0, Torre1, Torre3) → caso base
+    ├── Mover disco 2: Torre2 → Torre3
+    └── moveDisks(1, Torre3, Torre2)
+        ├── moveDisks(0, Torre2, Torre1) → caso base
+        ├── Mover disco 1: Torre1 → Torre3
+        └── moveDisks(0, Torre3, Torre2) → caso base
+```
 
-### Code Splitting
+Total: **7 movimientos** (`2³ - 1`).
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+---
 
-### Analyzing the Bundle Size
+## Estructura del Proyecto
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+```
+tower_hanoi_app/
+├── index.html              # Entry point Vite
+├── vite.config.js          # Configuración Vite + React
+├── package.json
+├── public/
+│   └── vite.svg            # Favicon
+├── src/
+│   ├── main.jsx            # Mount de React
+│   ├── App.jsx            # Componente principal
+│   ├── App.css             # Estilos modernos 2026
+│   ├── index.css           # Reset + variables CSS
+│   ├── components/
+│   │   ├── GameOptionsComp.jsx  # Controles (discos, resolver, reiniciar)
+│   │   ├── TowerComp.jsx        # Renderiza una torre con sus discos
+│   │   └── WinMessageComp.jsx   # Overlay de victoria
+│   ├── utils/
+│   │   ├── Stack.js        # Stack implementado como lista enlazada
+│   │   └── Tower.js        # Torre con algoritmo recursivo (generador)
+│   └── helpers/
+│       └── deepCopy.js     # Copia profunda con prototipo
+└── README.md
+```
 
-### Making a Progressive Web App
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+## Estructuras de Datos
 
-### Advanced Configuration
+### Stack (`src/utils/Stack.js`)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+Pila basada en **lista enlazada simple** con nodos `{id, value, width, next}`:
 
-### Deployment
+| Método     | Comportamiento                        |
+|------------|---------------------------------------|
+| `push(v)`  | Inserta al inicio (nuevo head)        |
+| `pop()`    | Extrae el head y lo retorna           |
+| `peek()`   | Retorna el head sin extraerlo         |
+| `traverse()` | Recorre la lista y retorna un array |
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+### Tower (`src/utils/Tower.js`)
 
-### `npm run build` fails to minify
+| Método                     | Comportamiento                                      |
+|----------------------------|-----------------------------------------------------|
+| `add(value)`               | Apila un disco (push al Stack)                      |
+| `moveTopTo(target)`        | Mueve el disco superior si la regla lo permite      |
+| `*moveDisks(n, t, b)`      | **Generador recursivo** que resuelve el problema    |
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+---
+
+## Componentes
+
+| Componente           | Props recibe                                       | Rol                             |
+|----------------------|----------------------------------------------------|---------------------------------|
+| `GameOptionsComp`    | `diskCount, setDiskCount, onSolve, onReset, solving` | Panel de control               |
+| `TowerComp`          | `id, disks, onDrag, onDrop`                        | Torre visual con Drag & Drop    |
+| `WinMessageComp`     | `moveCount`                                        | Overlay de victoria             |
+
+---
+
+## Cómo Ejecutar
+
+```bash
+npm install
+npm run dev
+```
+
+Abrir `http://localhost:3000` en el navegador.
+
+---
+
+## Demo Visual
+
+La UI actualizada a 2026 incluye:
+
+- Tema oscuro/claro automático (`prefers-color-scheme`)
+- Gradientes en discos y títulos
+- Animaciones sutiles (hover, fade-in en victoria)
+- Responsive
+- Sin dependencias externas de UI — CSS personalizado con variables
+
+---
+
+## Licencia
+
+MIT
