@@ -124,7 +124,7 @@ const App = () => {
       </div>
 
       {winCondition && !solving && (
-        <WinMessageComp moveCount={moveCount} />
+        <WinMessageComp moveCount={moveCount} onReset={reset} />
       )}
     </div>
   );

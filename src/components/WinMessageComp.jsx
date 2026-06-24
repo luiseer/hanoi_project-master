@@ -1,4 +1,4 @@
-const WinMessageComp = ({ moveCount }) => {
+const WinMessageComp = ({ moveCount, onReset }) => {
   return (
     <div className="win-overlay">
       <div className="win-card">
@@ -8,6 +8,9 @@ const WinMessageComp = ({ moveCount }) => {
           Completaste el juego en{' '}
           <span className="win-highlight">{moveCount}</span> movimientos
         </p>
+        <button className="btn-action btn-action--primary win-btn" onClick={onReset}>
+          Reiniciar
+        </button>
       </div>
     </div>
   );
